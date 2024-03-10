@@ -1,9 +1,6 @@
 ﻿@inherits LayoutComponentBase
 <div class="page">
-    @* <div class="sidebar">
-        <NavMenu />
-    </div> *@
-
+    
     <main>
         <nav class="navbar navbar-default">
             <div class="container-fluid">
@@ -23,8 +20,14 @@
 
 
 <style>
-
-    .navbar{
-        background-color: linear-gradient(to right, #006aff, #00e9a6);
+    .navbar-default{
+        width: 100%;
     }
+
+    @@media (max-width: 600px){
+        .navbar-default{
+            width: 100%;
+        }
+    }
+    
 </style>
