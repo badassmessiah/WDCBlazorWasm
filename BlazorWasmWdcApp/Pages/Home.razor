@@ -1,4 +1,9 @@
 ﻿@page "/"
+@page "/authentication/{action}"
+
+    <div class="background">
+        <RemoteAuthenticatorView Action="@Action"/>
+    </div>
 @using Newtonsoft.Json;
 @inject HttpClient Http
 
@@ -6,8 +11,8 @@
 @using Microsoft.Graph
 @using Microsoft.Graph.Models
 @inject NavigationManager Navigation
-@* @attribute [Authorize]
-@inject GraphServiceClient Client *@
+@* @attribute [Authorize] *@
+@inject GraphServiceClient Client
 
 <PageTitle>WDC</PageTitle>
     <div class="parent">
@@ -22,21 +27,23 @@
             </div>
             <div class="item">
                 <button class="btn" @onclick="Calculate" >Calculate</button>
+                <label class="label">@result</label>
             </div>
         </div>
 
         <div class="result-container">
             <div class="item">
-                <label class="label">End Date: @result</label>
+            <label class="labels">Event Subject</label>
+                <InputText class="input-number" @bind-Value="subject"></InputText>
             </div>
             <div class="item">
                 <AuthorizeView>
-                    <NotAuthorized>
-                    <button @onclick="LogIn" class="btn">Log in to add in your calendar</button>
-                    </NotAuthorized>
                     <Authorized>
                         <button @onclick="AddToCalendar" class="btn">Add in your calendar</button>
                     </Authorized>
+                    <NotAuthorized>
+                        <button @onclick="LogIn" class="btn">Log in to add in your calendar</button>
+                    </NotAuthorized>
                 </AuthorizeView>
                 
             </div>
@@ -47,6 +54,10 @@
         @@import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap');
         body{
             font-family: "Poppins", sans-serif;
+        }
+
+        .background{
+            z-index: -10;
         }
 
         .labels{
@@ -196,16 +207,60 @@
     DateTime datetime = DateTime.Now;
     int number = 0;
     string result = "";
+    string subject = "";
     DateTime resultDate;    
-
+    [Parameter] public string Action { get; set; }
     public List<PublicHoliday> _holidays = new List<PublicHoliday>();
 
     private Microsoft.Graph.Models.User? user;
+    //private Event? _event;
 
-    public void AddToCalendar()
+    public Event CreateEvent(string subject, DateTime dateTime)
     {
-        result = "Adding In calendar";
+        var dateAtStartOfTheDay = dateTime.Date;
+
+        var newEvent = new Event
+		{
+			Subject = subject,
+			Start = new DateTimeTimeZone
+			{
+                DateTime = dateAtStartOfTheDay.ToString("yyyy-MM-ddTHH:mm:ss"),
+                TimeZone = "Asia/Tbilisi"
+			},
+			End = new DateTimeTimeZone
+			{
+                DateTime = dateAtStartOfTheDay.AddDays(1).ToString("yyyy-MM-ddTHH:mm:ss"),
+                TimeZone = "Asia/Tbilisi"
+			}
+		};
+
+        return newEvent;
+
     }
+
+    public async Task AddToCalendar()
+    {
+        if (subject.Length > 0)
+        {
+            try
+            {
+                await Client.Me.Calendar.Events.PostAsync(CreateEvent(subject, resultDate));
+                subject = $"Event added successfully";
+            }
+            catch (Exception ex)
+            {
+                result = ex.Message;
+            }
+        }
+        else
+		{
+			result = "Please type something in subject";
+		}
+
+        
+
+    }
+
 
     public void LogIn()
     {
