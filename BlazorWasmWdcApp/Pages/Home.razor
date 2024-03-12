@@ -2,6 +2,13 @@
 @using Newtonsoft.Json;
 @inject HttpClient Http
 
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Graph
+@using Microsoft.Graph.Models
+@inject NavigationManager Navigation
+@* @attribute [Authorize]
+@inject GraphServiceClient Client *@
+
 <PageTitle>WDC</PageTitle>
     <div class="parent">
         <div class="container">
@@ -23,7 +30,15 @@
                 <label class="label">End Date: @result</label>
             </div>
             <div class="item">
-                <button disabled="true" class="btn">add in your calendar</button>
+                <AuthorizeView>
+                    <NotAuthorized>
+                    <button @onclick="LogIn" class="btn">Log in to add in your calendar</button>
+                    </NotAuthorized>
+                    <Authorized>
+                        <button @onclick="AddToCalendar" class="btn">Add in your calendar</button>
+                    </Authorized>
+                </AuthorizeView>
+                
             </div>
         </div>
     </div>
@@ -185,18 +200,40 @@
 
     public List<PublicHoliday> _holidays = new List<PublicHoliday>();
 
+    private Microsoft.Graph.Models.User? user;
+
+    public void AddToCalendar()
+    {
+        result = "Adding In calendar";
+    }
+
+    public void LogIn()
+    {
+        Navigation.NavigateToLogin("authentication/login");
+    }
+
     string jpath = "holidays.json";
 
     private async void Calculate()
     {
         resultDate = await WorkingDays.CalculateWorkingDays(datetime, number, _holidays);
-        result = $"The end date is {resultDate.Day} {resultDate.ToString("MMMM")}";
+
+        if (resultDate.Year == DateTime.Now.Year)
+		{
+			result = $"The end date is {resultDate.Day} {resultDate.ToString("MMMM")}";
+		}
+		else
+		{
+			result = $"The end date is {resultDate.Day} {resultDate.ToString("MMMM")} {resultDate.Year}";
+		}
+
+        //result = $"The end date is {resultDate.Day} {resultDate.ToString("MMMM")}";
 
     }
 
     protected override async Task OnInitializedAsync()
 	{
-        
+        //user = await Client.Me.GetAsync();
 		_holidays = await Http.GetFromJsonAsync<List<PublicHoliday>>(jpath);
 	}
 }

@@ -1,0 +1,19 @@
+﻿@page "/authentication/{action}"
+
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+<RemoteAuthenticatorView Action="@Action" />
+
+@if (Action == "login")
+{
+	<h1>Authentication Is In Progress</h1>
+} 
+else
+{
+	<h1>Authentication Failed</h1>
+}
+
+
+
+@code {
+	[Parameter] public string Action { get; set; }
+}
