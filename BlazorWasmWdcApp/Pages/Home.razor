@@ -32,12 +32,7 @@
 				<label class="label">@result</label>
 			</div>
 		</div>
-		<div class="col">
-			<div class="item">
-				<label class="labels">ServiceDesk Projects</label>
-				
-			</div>
-		</div>
+		<div class="col"></div>
 	</div>
 
 </div>
@@ -61,6 +56,22 @@
 
 			</div>
 
+		</div>
+		<div class="col"></div>
+	</div>
+</div>
+<div class="container">
+	<div class="row">
+		<div class="col"></div>
+		<div class="col-md square">
+			<div class="item">
+				<label class="labels">Project Title</label>
+				<InputText class="input-number" @bind-Value="projectTitle"></InputText>
+			</div>
+			<div class="item">
+				<button class="btn" @onclick="CreateProject">Create Project In SDP</button>
+				<label class="label">@projectResult</label>
+			</div>
 		</div>
 		<div class="col"></div>
 	</div>
@@ -168,6 +179,28 @@
 </style>
 
 @code {
+	public string projectTitle = "";
+	public string projectResult = "";
+
+	public async Task CreateProject()
+	{
+		if (projectTitle.Length > 0)
+		{
+			try
+			{
+				SDPCloud.GetAccessToken(Http);
+			}
+			catch (Exception ex)
+			{
+				projectResult = ex.Message;
+			}
+		}
+		else
+		{
+			projectResult = "Please type something in project title";
+		}
+	}
+
 	DateTime datetime = DateTime.Now;
 	int number = 0;
 	string result = "";
