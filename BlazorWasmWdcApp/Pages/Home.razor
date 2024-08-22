@@ -1,5 +1,6 @@
 ﻿@page "/"
 @page "/authentication/{action}"
+@page "/oauth"
 
 <div class="background">
 	<RemoteAuthenticatorView Action="@Action" />
@@ -13,6 +14,7 @@
 @inject NavigationManager Navigation
 @* @attribute [Authorize] *@
 @inject GraphServiceClient Client
+@inject IJSRuntime JSRuntime
 
 <PageTitle>WDC</PageTitle>
 <div class="container">
@@ -188,7 +190,9 @@
 		{
 			try
 			{
-				SDPCloud.GetAccessToken(Http);
+				var authorizationCode = await SDPCloud.GetAuthorizationCodeAsync(JSRuntime);
+				var accessToken = await SDPCloud.GetAccessTokenAsync(authorizationCode);
+				
 			}
 			catch (Exception ex)
 			{

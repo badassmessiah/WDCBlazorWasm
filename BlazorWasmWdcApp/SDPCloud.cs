@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using Microsoft.JSInterop;
 
 namespace BlazorWasmWdcApp
 {
@@ -10,30 +11,45 @@ namespace BlazorWasmWdcApp
 	{
 		private static readonly string _clientId = "1000.1H74DTCN12M3IL5RKGOP3AZ2ECZB7Z";
 		private static readonly string _clientSecret = "50b39baef3e35e598907f48efd7be723712dc7a81c";
-		private static readonly string _url = "https://accounts.zoho.com/oauth/v2/token";
+		private static readonly string _authUrl = "https://accounts.zoho.com/oauth/v2/auth";
+		private static readonly string _tokenURL = "https://accounts.zoho.com/oauth/v2/token";
+		private static readonly string _redirectUri = "https://localhost:7202/oauth";
+		private static readonly string _scope = "SDPOnDemand.projects.ALL";
 
-		public static async Task<string> GetAccessToken(HttpClient httpClient)
+		public static async Task<string> GetAuthorizationCodeAsync(IJSRuntime jsRuntime)
 		{
-			var requestBody = new Dictionary<string, string>
-				{
-					{ "client_id", _clientId },
-					{ "client_secret", _clientSecret },
-					{ "grant_type", "authorization_code" }
-				};
+			var authRequestUrl = $"{_authUrl}?response_type=code&client_id={_clientId}&redirect_uri={_redirectUri}&scope={_scope}";
+			await jsRuntime.InvokeVoidAsync("open", authRequestUrl, "_self");
+			return authRequestUrl;
+		}
 
-			var requestContent = new FormUrlEncodedContent(requestBody);
-			var response = await httpClient.PostAsync(_url, requestContent);
-			response.EnsureSuccessStatusCode();
-
-			var responseContent = await response.Content.ReadAsStringAsync();
-			var tokenResponse = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseContent);
-
-			if (tokenResponse != null && tokenResponse.TryGetValue("access_token", out var accessToken))
+		public static async Task<string> GetAccessTokenAsync(string authorizationCode)
+		{
+			using (var client = new HttpClient())
 			{
-				return accessToken;
-			}
+				var requestData = new Dictionary<string, string>
+					{
+						{ "grant_type", "authorization_code" },
+						{ "client_id", _clientId },
+						{ "client_secret", _clientSecret },
+						{ "redirect_uri", _redirectUri },
+						{ "code", authorizationCode }
+					};
 
-			throw new HttpRequestException("Failed to retrieve access token.");
+				var requestContent = new FormUrlEncodedContent(requestData);
+				var response = await client.PostAsync(_tokenURL, requestContent);
+				response.EnsureSuccessStatusCode();
+
+				var responseContent = await response.Content.ReadAsStringAsync();
+				var tokenResponse = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseContent);
+
+				if (tokenResponse != null && tokenResponse.ContainsKey("access_token"))
+				{
+					return tokenResponse["access_token"];
+				}
+
+				return null;
+			}
 		}
 	}
 }
