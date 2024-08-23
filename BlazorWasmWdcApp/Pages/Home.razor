@@ -190,7 +190,7 @@
 		{
 			try
 			{
-				var authorizationCode = await SDPCloud.GetAuthorizationCodeAsync(JSRuntime);
+				var authorizationCode = await SDPCloud.GetAuthorizationCodeAsync(Navigation);
 				var accessToken = await SDPCloud.GetAccessTokenAsync(authorizationCode);
 				
 			}

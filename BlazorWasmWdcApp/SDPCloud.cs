@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using Microsoft.JSInterop;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 
 namespace BlazorWasmWdcApp
 {
@@ -15,11 +17,13 @@ namespace BlazorWasmWdcApp
 		private static readonly string _tokenURL = "https://accounts.zoho.com/oauth/v2/token";
 		private static readonly string _redirectUri = "https://localhost:7202/oauth";
 		private static readonly string _scope = "SDPOnDemand.projects.ALL";
-
-		public static async Task<string> GetAuthorizationCodeAsync(IJSRuntime jsRuntime)
+		
+		public static async Task<string> GetAuthorizationCodeAsync(NavigationManager navigationManager)
 		{
 			var authRequestUrl = $"{_authUrl}?response_type=code&client_id={_clientId}&redirect_uri={_redirectUri}&scope={_scope}";
-			await jsRuntime.InvokeVoidAsync("open", authRequestUrl, "_self");
+			//await jsRuntime.InvokeVoidAsync("open", authRequestUrl, "_blank");
+			navigationManager.NavigateTo(authRequestUrl);
+			//navigationManager.NavigateToLogin(authRequestUrl);
 			return authRequestUrl;
 		}
 
