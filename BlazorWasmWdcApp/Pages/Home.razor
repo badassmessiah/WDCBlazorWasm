@@ -180,6 +180,30 @@
 	}
 </style>
 
+<script>
+
+	function openAuthPopup(url) {
+		var width = 600, height = 600;
+		var left = (screen.width / 2) - (width / 2);
+		var top = (screen.height / 2) - (height / 2);
+		var authWindow = window.open(url, 'authPopup', `width=${width},height=${height},top=${top},left=${left}`);
+
+		var interval = setInterval(function () {
+			try {
+				if (authWindow.location.href.indexOf('code=') !== -1) {
+					clearInterval(interval);
+					var urlParams = new URLSearchParams(authWindow.location.search);
+					var code = urlParams.get('code');
+					authWindow.close();
+					DotNet.invokeMethodAsync('BlazorWasmWdcApp', 'ReceiveAuthCode', code);
+				}
+			} catch (e) {
+				// Ignore cross-origin errors
+			}
+		}, 1000);
+	}
+</script>
+
 @code {
 	public string projectTitle = "";
 	public string projectResult = "";
@@ -188,10 +212,12 @@
 	{
 		if (projectTitle.Length > 0)
 		{
+
+
 			try
 			{
-				var authorizationCode = await SDPCloud.GetAuthorizationCodeAsync(Navigation);
-				var accessToken = await SDPCloud.GetAccessTokenAsync(authorizationCode);
+				await SDPCloud.GetAuthorizationCodeAsync(JSRuntime);
+				//var accessToken = await SDPCloud.GetAccessTokenAsync(authorizationCode);
 				
 			}
 			catch (Exception ex)
@@ -203,6 +229,13 @@
 		{
 			projectResult = "Please type something in project title";
 		}
+	}
+
+	[JSInvokable]
+	public static async Task ReceiveAuthCode(string code)
+	{
+		var accessToken = await SDPCloud.GetAccessTokenAsync(code);
+		// Use the access token as needed
 	}
 
 	DateTime datetime = DateTime.Now;
