@@ -43,6 +43,11 @@ namespace BlazorWasmWdcApp
 					{ "code", authorizationCode }
 				};
 
+				foreach (var kvp in requestData)
+				{
+					Console.WriteLine($"{kvp.Key}: {kvp.Value}");
+				}
+
 				var requestContent = new FormUrlEncodedContent(requestData);
 				var response = await client.PostAsync(_tokenURL, requestContent);
 				response.EnsureSuccessStatusCode();
@@ -55,7 +60,7 @@ namespace BlazorWasmWdcApp
 					return tokenResponse["access_token"];
 				}
 
-				return null;
+				throw new Exception("Access token not found in the response.");
 			}
 		}
 	}
