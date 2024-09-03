@@ -109,10 +109,10 @@
 		height: 40px;
 	}
 
-/* 	.container {
-		margin-top: 50px;
-		
-	} */
+	/* 	.container {
+								margin-top: 50px;
+
+							} */
 
 	.square {
 		margin-bottom: 50px;
@@ -205,10 +205,10 @@
 </script>
 
 
-@code{
+@code {
 	public static class Token
 	{
-		public static string AccessToken { get; set; }	
+		public static string AccessToken { get; set; }
 	}
 }
 
@@ -229,8 +229,6 @@
 	{
 		if (projectTitle.Length > 0)
 		{
-
-
 			try
 			{
 				await SDPCloud.GetAccessTokenAsync(JSRuntime);
@@ -239,18 +237,20 @@
 				{
 					await Task.Delay(100);
 				}
+
 				var project = new Project
 					{
 						title = projectTitle,
-						scheduled_start_time = new TimeValue { value = datetime.ToString("yyyy-MM-ddTHH:mm:ss") },
-						scheduled_end_time = new TimeValue { value = resultDate.ToString("yyyy-MM-ddTHH:mm:ss") }
+						actual_end_time = new TimeValue { value = ToUnixTimeMilliseconds(resultDate).ToString() },
+						actual_start_time = new TimeValue { value = ToUnixTimeMilliseconds(datetime).ToString() },
+						scheduled_end_time = new TimeValue { value = ToUnixTimeMilliseconds(resultDate).ToString() },
+						projected_end = new TimeValue { value = ToUnixTimeMilliseconds(resultDate).ToString() },
+						scheduled_start_time = new TimeValue { value = ToUnixTimeMilliseconds(datetime).ToString() }
 					};
 
-				await SDPCloud.CreateNewProject(_accessToken);
+				await SDPCloud.CreateNewProject(_accessToken, project);
 
 				projectResult = "Project created successfully";
-				//projectResult = _accessToken;
-
 			}
 			catch (Exception ex)
 			{
@@ -262,9 +262,12 @@
 			projectResult = "Please type something in project title";
 		}
 	}
+	private long ToUnixTimeMilliseconds(DateTime dateTime)
+	{
+		return new DateTimeOffset(dateTime).ToUnixTimeMilliseconds();
+	}
 
 
-	
 
 	DateTime datetime = DateTime.Now;
 	int number = 0;
