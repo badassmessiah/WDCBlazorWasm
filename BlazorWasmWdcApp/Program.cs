@@ -5,7 +5,7 @@ namespace BlazorWasmWdcApp
 {
     public class Program
     {
-        public static async Task Main(string[] args)
+		public static async Task Main(string[] args)
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<App>("#app");
@@ -26,7 +26,7 @@ namespace BlazorWasmWdcApp
 
 			});
 
-            await builder.Build().RunAsync();
+			await builder.Build().RunAsync();
         }
 
         

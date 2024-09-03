@@ -190,12 +190,12 @@
 
 		var interval = setInterval(function () {
 			try {
-				if (authWindow.location.href.indexOf('code=') !== -1) {
+				if (authWindow.location.href.indexOf('access_token=') !== -1) {
 					clearInterval(interval);
-					var urlParams = new URLSearchParams(authWindow.location.search);
-					var code = urlParams.get('code');
+					var urlParams = new URLSearchParams(authWindow.location.hash.substring(1));
+					var accessToken = urlParams.get('access_token');
 					authWindow.close();
-					DotNet.invokeMethodAsync('BlazorWasmWdcApp', 'ReceiveAuthCode', code);
+					DotNet.invokeMethodAsync('BlazorWasmWdcApp', 'ReceiveAccessToken', accessToken);
 				}
 			} catch (e) {
 				// Ignore cross-origin errors
@@ -204,9 +204,18 @@
 	}
 </script>
 
+
+@code{
+	public static class Token
+	{
+		public static string AccessToken { get; set; }	
+	}
+}
+
 @code {
 	public string projectTitle = "";
 	public string projectResult = "";
+
 
 	public async Task CreateProject()
 	{
@@ -216,9 +225,12 @@
 
 			try
 			{
-				await SDPCloud.GetAuthorizationCodeAsync(JSRuntime);
-				//var accessToken = await SDPCloud.GetAccessTokenAsync(authorizationCode);
+				await SDPCloud.GetAccessTokenAsync(JSRuntime);
 				
+
+				
+				projectResult = "Project created successfully";
+
 			}
 			catch (Exception ex)
 			{
@@ -231,11 +243,11 @@
 		}
 	}
 
+
 	[JSInvokable]
-	public static async Task ReceiveAuthCode(string code)
+	public static async Task ReceiveAccessToken(string token)
 	{
-		var accessToken = await SDPCloud.GetAccessTokenAsync(code);
-		// Use the access token as needed
+		Token.AccessToken = token;
 	}
 
 	DateTime datetime = DateTime.Now;

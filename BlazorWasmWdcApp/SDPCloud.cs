@@ -6,62 +6,45 @@ using System.Collections.Generic;
 using Microsoft.JSInterop;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
+using Microsoft.Graph.Models;
+using System.Text;
 
 namespace BlazorWasmWdcApp
 {
 	public static class SDPCloud
 	{
-		private static readonly string _clientId = "1000.SGLJOLCCSRPBFDPM31PYFTILSGOBVC";
-		private static readonly string _clientSecret = "1d4115580f5b81d87e9cb37634aff6743b89f61552";
+		private static readonly string _clientId = "1000.1H74DTCN12M3IL5RKGOP3AZ2ECZB7Z";
 		private static readonly string _authUrl = "https://accounts.zoho.com/oauth/v2/auth";
-		private static readonly string _tokenURL = "https://accounts.zoho.com/oauth/v2/token";
-		private static readonly string _redirectUri = "https://localhost:7202/oauth";
+		private static readonly string _redirectUri = "https://localhost:7202";
 		private static readonly string _scope = "SDPOnDemand.projects.ALL";
+		private static readonly string _sdpUrl = "https://project.syntax.ge/";
 
-		//public static void GetAuthorizationCode(NavigationManager navigationManager)
-		//{
-		//	var authRequestUrl = $"{_authUrl}?response_type=code&client_id={_clientId}&redirect_uri={_redirectUri}&scope={_scope}&access_type=offline";
-		//	navigationManager.NavigateTo(authRequestUrl, true);
-		//}
+		
 
-		public static async Task GetAuthorizationCodeAsync(IJSRuntime jsRuntime)
+		public static async Task GetAccessTokenAsync(IJSRuntime runtime)
 		{
-			var authRequestUrl = $"{_authUrl}?response_type=code&client_id={_clientId}&redirect_uri={_redirectUri}&scope={_scope}&access_type=offline";
-			await jsRuntime.InvokeVoidAsync("openAuthPopup", authRequestUrl);
+			var authRequestUrl = $"{_authUrl}?client_id={_clientId}&response_type=token&scope={_scope}&redirect_uri={_redirectUri}";
+			await runtime.InvokeVoidAsync("openAuthPopup", authRequestUrl);
 		}
 
-		public static async Task<string> GetAccessTokenAsync(string authorizationCode)
+		public static async Task CreateNewProject(Project project, string accessToken)
 		{
 			using (var client = new HttpClient())
 			{
-				var requestData = new Dictionary<string, string>
-				{
-					{ "grant_type", "authorization_code" },
-					{ "client_id", _clientId },
-					{ "client_secret", _clientSecret },
-					{ "redirect_uri", _redirectUri },
-					{ "code", authorizationCode }
-				};
+				client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.manageengine.sdp.v3+json"));
+				client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Zoho-oauthtoken", accessToken);
 
-				foreach (var kvp in requestData)
-				{
-					Console.WriteLine($"{kvp.Key}: {kvp.Value}");
-				}
+				var projectData = new { project };
+				var jsonContent = JsonConvert.SerializeObject(new { input_data = projectData });
+				var content = new StringContent($"input_data={jsonContent}", Encoding.UTF8, "application/x-www-form-urlencoded");
 
-				var requestContent = new FormUrlEncodedContent(requestData);
-				var response = await client.PostAsync(_tokenURL, requestContent);
+				var response = await client.PostAsync($"{_sdpUrl}api/v3/projects", content);
 				response.EnsureSuccessStatusCode();
-
-				var responseContent = await response.Content.ReadAsStringAsync();
-				var tokenResponse = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseContent);
-
-				if (tokenResponse != null && tokenResponse.ContainsKey("access_token"))
-				{
-					return tokenResponse["access_token"];
-				}
-
-				throw new Exception("Access token not found in the response.");
 			}
 		}
+
+
 	}
+
+	
 }
