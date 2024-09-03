@@ -216,6 +216,14 @@
 	public string projectTitle = "";
 	public string projectResult = "";
 
+	public static string _accessToken = "";
+
+	[JSInvokable]
+	public static void ReceiveAccessToken(string token)
+	{
+		Token.AccessToken = token;
+		_accessToken = token;
+	}
 
 	public async Task CreateProject()
 	{
@@ -226,10 +234,22 @@
 			try
 			{
 				await SDPCloud.GetAccessTokenAsync(JSRuntime);
-				
 
-				
+				while (string.IsNullOrEmpty(Token.AccessToken))
+				{
+					await Task.Delay(100);
+				}
+				var project = new Project
+					{
+						title = projectTitle,
+						scheduled_start_time = new TimeValue { value = datetime.ToString("yyyy-MM-ddTHH:mm:ss") },
+						scheduled_end_time = new TimeValue { value = resultDate.ToString("yyyy-MM-ddTHH:mm:ss") }
+					};
+
+				await SDPCloud.CreateNewProject(_accessToken);
+
 				projectResult = "Project created successfully";
+				//projectResult = _accessToken;
 
 			}
 			catch (Exception ex)
@@ -244,11 +264,7 @@
 	}
 
 
-	[JSInvokable]
-	public static async Task ReceiveAccessToken(string token)
-	{
-		Token.AccessToken = token;
-	}
+	
 
 	DateTime datetime = DateTime.Now;
 	int number = 0;

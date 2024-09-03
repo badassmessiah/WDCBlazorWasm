@@ -27,19 +27,25 @@ namespace BlazorWasmWdcApp
 			await runtime.InvokeVoidAsync("openAuthPopup", authRequestUrl);
 		}
 
-		public static async Task CreateNewProject(Project project, string accessToken)
+		public static async Task CreateNewProject(string accessToken)
 		{
-			using (var client = new HttpClient())
+			var client = new HttpClient();
+			var request = new HttpRequestMessage(HttpMethod.Get, $"{_sdpUrl}api/v3/projects");
+
+			request.Headers.Add("Accept", "application/vnd.manageengine.sdp.v3+json");
+			request.Headers.Add("Authorization", $"Zoho-oauthtoken {accessToken}");
+			request.Headers.Add("Cookie", "_zcsr_tmp=ae4b5dbb-04a4-472c-be56-984043db7123; sdpcscook=ae4b5dbb-04a4-472c-be56-984043db7123; zalb_6bc9ae5955=6767e7ac871db7481716d79d97484427");
+
+			try
 			{
-				client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.manageengine.sdp.v3+json"));
-				client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Zoho-oauthtoken", accessToken);
-
-				var projectData = new { project };
-				var jsonContent = JsonConvert.SerializeObject(new { input_data = projectData });
-				var content = new StringContent($"input_data={jsonContent}", Encoding.UTF8, "application/x-www-form-urlencoded");
-
-				var response = await client.PostAsync($"{_sdpUrl}api/v3/projects", content);
+				var response = await client.SendAsync(request);
 				response.EnsureSuccessStatusCode();
+				Console.WriteLine(await response.Content.ReadAsStringAsync());
+			}
+			catch (HttpRequestException e)
+			{
+				// Log the exception or handle it as needed
+				throw new Exception("Failed to fetch: " + e.Message);
 			}
 		}
 
