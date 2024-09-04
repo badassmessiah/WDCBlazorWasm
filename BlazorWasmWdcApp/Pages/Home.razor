@@ -49,7 +49,7 @@
 			<div class="item">
 				<AuthorizeView>
 					<Authorized>
-						<button @onclick="AddToCalendar" class="btn">Add in your calendar</button>
+						<button @onclick="AddToCalendar" class="btn" disabled="@isAddingEvent">@addEventButtonText</button>
 					</Authorized>
 					<NotAuthorized>
 						<button @onclick="LogIn" class="btn">Log in to add in your calendar</button>
@@ -71,7 +71,7 @@
 				<InputText class="input-number" @bind-Value="projectTitle"></InputText>
 			</div>
 			<div class="item">
-				<button class="btn" @onclick="CreateProject">Create Project In SDP</button>
+				<button class="btn" @onclick="HandleCreateProject" disabled="@isCreatingProject">@createProjectButtonText</button>
 				<label class="label">@projectResult</label>
 			</div>
 		</div>
@@ -205,12 +205,6 @@
 </script>
 
 
-@code {
-	public static class Token
-	{
-		public static string AccessToken { get; set; }
-	}
-}
 
 @code {
 	public string projectTitle = "";
@@ -218,22 +212,33 @@
 
 	public static string _accessToken = "";
 
+	private bool isCreatingProject = false;
+	private string createProjectButtonText = "Create Project In SDP";
+
 	[JSInvokable]
 	public static void ReceiveAccessToken(string token)
 	{
-		Token.AccessToken = token;
 		_accessToken = token;
+	}
+
+	private async Task HandleCreateProject()
+	{
+		isCreatingProject = true;
+		createProjectButtonText = "Adding...";
+		await CreateProject();
+		isCreatingProject = false;
+		createProjectButtonText = "Create Project In SDP";
 	}
 
 	public async Task CreateProject()
 	{
-		if (projectTitle.Length > 0)
+		if (projectTitle.Length > 0 && projectTitle.Length < 250)
 		{
 			try
 			{
 				await SDPCloud.GetAccessTokenAsync(JSRuntime);
 
-				while (string.IsNullOrEmpty(Token.AccessToken))
+				while (string.IsNullOrEmpty(_accessToken))
 				{
 					await Task.Delay(100);
 				}
@@ -262,6 +267,8 @@
 			projectResult = "Please type something in project title";
 		}
 	}
+
+
 	private long ToUnixTimeMilliseconds(DateTime dateTime)
 	{
 		return new DateTimeOffset(dateTime).ToUnixTimeMilliseconds();
@@ -277,8 +284,10 @@
 	[Parameter] public string Action { get; set; }
 	public List<PublicHoliday> _holidays = new List<PublicHoliday>();
 
+	private bool isAddingEvent = false;
+	private string addEventButtonText = "Add in your calendar";
+
 	private Microsoft.Graph.Models.User? user;
-	//private Event? _event;
 
 	public Event CreateEvent(string subject, DateTime dateTime)
 	{
@@ -309,12 +318,19 @@
 		{
 			try
 			{
+				isAddingEvent = true;
+				addEventButtonText = "Adding...";
 				await Client.Me.Calendar.Events.PostAsync(CreateEvent(subject, resultDate));
 				subject = $"Event added successfully";
 			}
 			catch (Exception ex)
 			{
 				subject = ex.Message;
+			}
+			finally
+			{
+				isAddingEvent = false;
+				addEventButtonText = "Add in your calendar";
 			}
 		}
 		else
@@ -347,13 +363,10 @@
 			result = $"The end date is {resultDate.Day} {resultDate.ToString("MMMM")} {resultDate.Year}";
 		}
 
-		//result = $"The end date is {resultDate.Day} {resultDate.ToString("MMMM")}";
-
 	}
 
 	protected override async Task OnInitializedAsync()
 	{
-		//user = await Client.Me.GetAsync();
 		_holidays = await Http.GetFromJsonAsync<List<PublicHoliday>>(jpath);
 	}
 }
