@@ -26,6 +26,8 @@ namespace BlazorWasmWdcApp
 
 			});
 
+			SDPCloud.Initialize(builder.Configuration);
+
 			await builder.Build().RunAsync();
         }
 
