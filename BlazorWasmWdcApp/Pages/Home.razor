@@ -7,13 +7,9 @@
 </div>
 @using Newtonsoft.Json;
 @inject HttpClient Http
-
+@inject SessionStorageAccessor SessionStorageAccessor
 @using Microsoft.AspNetCore.Authorization
-@using Microsoft.Graph
-@using Microsoft.Graph.Models
 @inject NavigationManager Navigation
-@* @attribute [Authorize] *@
-@inject GraphServiceClient Client
 @inject IJSRuntime JSRuntime
 
 <PageTitle>WDC</PageTitle>
@@ -78,6 +74,7 @@
 		<div class="col"></div>
 	</div>
 </div>
+<MicrosoftLogin/>
 
 <style>
 	@@import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap');
@@ -198,10 +195,10 @@
 					DotNet.invokeMethodAsync('BlazorWasmWdcApp', 'ReceiveAccessToken', accessToken);
 				}
 			} catch (e) {
-				// Ignore cross-origin errors
 			}
 		}, 1000);
 	}
+
 </script>
 
 
@@ -274,6 +271,24 @@
 		return new DateTimeOffset(dateTime).ToUnixTimeMilliseconds();
 	}
 
+	private string StoredValue;
+	private string Key = "e542acdc-4f23-4bd2-b1ce-5a181f4104dc.73075322-9647-42a5-b106-a8446d362b6a-login.microsoftonline.com-accesstoken-58a97420-c2fc-45ed-bdfb-06ebec62cf81-73075322-9647-42a5-b106-a8446d362b6a-profile openid email https://graph.microsoft.com/calendars.readwrite https://graph.microsoft.com/user.read--";
+
+	public async Task<string> GetValueAsync()
+	{
+		StoredValue = await SessionStorageAccessor.GetValueAsync<string>(Key);
+
+		if (!string.IsNullOrEmpty(StoredValue))
+		{
+			var jsonObject = JsonConvert.DeserializeObject<Dictionary<string, string>>(StoredValue);
+			if (jsonObject != null && jsonObject.TryGetValue("secret", out string secret))
+			{
+				return secret;
+			}
+		}
+		return null;
+	}
+
 
 
 	DateTime datetime = DateTime.Now;
@@ -287,13 +302,12 @@
 	private bool isAddingEvent = false;
 	private string addEventButtonText = "Add in your calendar";
 
-	private Microsoft.Graph.Models.User? user;
 
-	public Event CreateEvent(string subject, DateTime dateTime)
+	public CalendarEvent CreateEvent(string subject, DateTime dateTime)
 	{
 		var dateAtStartOfTheDay = dateTime.Date;
 
-		var newEvent = new Event
+		var newEvent = new CalendarEvent
 			{
 				Subject = subject,
 				Start = new DateTimeTimeZone
@@ -312,6 +326,7 @@
 
 	}
 
+
 	public async Task AddToCalendar()
 	{
 		if (subject.Length > 0)
@@ -320,8 +335,19 @@
 			{
 				isAddingEvent = true;
 				addEventButtonText = "Adding...";
-				await Client.Me.Calendar.Events.PostAsync(CreateEvent(subject, resultDate));
-				subject = $"Event added successfully";
+
+				var client = new HttpClient();
+				var request = new HttpRequestMessage(HttpMethod.Post, "https://graph.microsoft.com/v1.0/me/events");
+				request.Headers.Add("Authorization", $"Bearer {await GetValueAsync()}");
+
+				var newEvent = CreateEvent(subject, resultDate);
+				var content = new StringContent(JsonConvert.SerializeObject(newEvent), System.Text.Encoding.UTF8, "application/json");
+				request.Content = content;
+
+				var response = await client.SendAsync(request);
+				response.EnsureSuccessStatusCode();
+
+				subject = "Event added successfully";
 			}
 			catch (Exception ex)
 			{
@@ -337,15 +363,15 @@
 		{
 			subject = "Please type something in subject";
 		}
-
-
-
 	}
 
 
-	public void LogIn()
+
+	public async void LogIn()
 	{
 		Navigation.NavigateToLogin("authentication/login");
+
+		
 	}
 
 	string jpath = "holidays.json";
@@ -456,7 +482,6 @@
 		top: 0;
 		left: 0;
 		background: #f8f7ff;
-		;
 		overflow: hidden;
 		z-index: -1;
 	}

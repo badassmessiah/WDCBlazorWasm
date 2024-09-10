@@ -12,11 +12,11 @@ namespace BlazorWasmWdcApp
             builder.RootComponents.Add<HeadOutlet>("head::after");
 
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
-            
+			builder.Services.AddScoped<SessionStorageAccessor>();
 
             var baseUrl = builder.Configuration.GetSection("MicrosoftGraph")["BaseUrl"];
             var scopes = builder.Configuration.GetSection("MicrosoftGraph:Scopes").Get<List<string>>();
-            builder.Services.AddGraphClient(baseUrl, scopes);
+            
 
             builder.Services.AddMsalAuthentication(options =>
             {
