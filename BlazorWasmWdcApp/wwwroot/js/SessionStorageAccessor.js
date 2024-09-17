@@ -13,3 +13,6 @@ export function clear() {
 export function remove(key) {
     window.sessionStorage.removeItem(key);
 }
+export function getAllKeys() {
+    return Object.keys(window.sessionStorage);
+}

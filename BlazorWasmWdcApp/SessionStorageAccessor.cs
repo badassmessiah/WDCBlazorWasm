@@ -52,5 +52,11 @@ namespace BlazorWasmWdcApp
 				await jsRef.DisposeAsync();
 			}
 		}
+		public async Task<List<string>> GetAllKeysAsync()
+		{
+			var jsRef = await GetJsReferenceAsync();
+			return await jsRef.InvokeAsync<List<string>>("getAllKeys");
+		}
+
 	}
 }
